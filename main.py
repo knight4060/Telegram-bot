@@ -1,4 +1,5 @@
 import os
+import asyncio
 from telegram import (
     Update,
     InlineKeyboardButton,
@@ -47,13 +48,19 @@ WELCOME_TEXT = (
 SCRIPT_TEXT = "🎉 *Free Script*\n\nUpdating..."
 VIP_SCRIPT_TEXT = "👑 *VIP Script*\n\nUpdating..."
 
+# ================= HELPER (ANIMATION) =================
+async def animate(query, text="⚡ Loading..."):
+    await query.edit_message_text(text)
+    await asyncio.sleep(0.5)
+
 # ================= /START =================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [[InlineKeyboardButton("🎮 Open Menu", callback_data="open_menu")]]
     await update.message.reply_text(
         WELCOME_TEXT,
         parse_mode="Markdown",
-        reply_markup=InlineKeyboardMarkup(keyboard)
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("🎮 Open Menu", callback_data="open_menu")]
+        ])
     )
 
 # ================= BUTTONS =================
@@ -61,39 +68,41 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    # ===== MAIN MENU =====
+    # ===== OPEN MENU =====
     if query.data == "open_menu":
-        keyboard = [
-            [
-                InlineKeyboardButton("📜 Free Script", callback_data="script"),
-                InlineKeyboardButton("👑 VIP Script", callback_data="vip")
-            ],
-            [InlineKeyboardButton("⚙️ Executor", callback_data="executor")],
-            [InlineKeyboardButton("⭐ Donate", callback_data="donate_menu")],
-            [
-                InlineKeyboardButton("📸 Instagram", url=INSTAGRAM_LINK),
-                InlineKeyboardButton("📺 YouTube", url=YOUTUBE_LINK)
-            ],
-            [InlineKeyboardButton("🔑 Key Script", url=KEY_LINK)]
-        ]
+        await animate(query, "🎮 Opening menu...")
         await query.edit_message_text(
             "📂 *Main Menu*\nChoose your move 👇",
             parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup(keyboard)
+            reply_markup=InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton("📜 Free Script", callback_data="script"),
+                    InlineKeyboardButton("👑 VIP Script", callback_data="vip")
+                ],
+                [InlineKeyboardButton("⚙️ Executor", callback_data="executor")],
+                [InlineKeyboardButton("⭐ Donate", callback_data="donate_menu")],
+                [
+                    InlineKeyboardButton("📸 Instagram", url=INSTAGRAM_LINK),
+                    InlineKeyboardButton("📺 YouTube", url=YOUTUBE_LINK)
+                ],
+                [InlineKeyboardButton("🔑 Key Script", url=KEY_LINK)]
+            ])
         )
 
     # ===== FREE SCRIPT =====
     elif query.data == "script":
+        await animate(query, "📜 Loading script...")
         await query.edit_message_text(
             SCRIPT_TEXT,
             parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup(
-                [[InlineKeyboardButton("🔙 Back", callback_data="open_menu")]]
-            )
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔙 Back", callback_data="open_menu")]
+            ])
         )
 
     # ===== VIP SCRIPT =====
     elif query.data == "vip":
+        await animate(query, "👑 Checking VIP...")
         if not context.user_data.get("vip"):
             await query.edit_message_text(
                 "🔒 *VIP Only*\n\nUnlock VIP for *300 Stars* 👑",
@@ -107,13 +116,14 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text(
                 VIP_SCRIPT_TEXT,
                 parse_mode="Markdown",
-                reply_markup=InlineKeyboardMarkup(
-                    [[InlineKeyboardButton("🔙 Back", callback_data="open_menu")]]
-                )
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("🔙 Back", callback_data="open_menu")]
+                ])
             )
 
     # ===== EXECUTOR =====
     elif query.data == "executor":
+        await animate(query, "⚙️ Loading executors...")
         await query.edit_message_text(
             "⚙️ *Choose your platform*",
             parse_mode="Markdown",
@@ -127,6 +137,7 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
     elif query.data == "pc":
+        await animate(query, "💻 Loading PC tools...")
         await query.edit_message_text(
             "💻 *PC Executors*",
             parse_mode="Markdown",
@@ -140,6 +151,7 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
     elif query.data == "android":
+        await animate(query, "🤖 Loading Android tools...")
         await query.edit_message_text(
             "🤖 *Android Executors*",
             parse_mode="Markdown",
@@ -152,8 +164,9 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ])
         )
 
-    # ===== DONATE MENU (RANGE) =====
+    # ===== DONATE MENU =====
     elif query.data == "donate_menu":
+        await animate(query, "⭐ Preparing donate options...")
         await query.edit_message_text(
             "💖 *Choose donate range:*",
             parse_mode="Markdown",
@@ -164,8 +177,8 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ])
         )
 
-    # ===== SMALL RANGE =====
     elif query.data == "range_small":
+        await animate(query, "⭐ Loading small range...")
         await query.edit_message_text(
             "⭐ *Donate 10–100 Stars*",
             parse_mode="Markdown",
@@ -183,8 +196,8 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ])
         )
 
-    # ===== BIG RANGE =====
     elif query.data == "range_big":
+        await animate(query, "⭐ Loading big range...")
         await query.edit_message_text(
             "⭐ *Donate 100–1000 Stars*",
             parse_mode="Markdown",
@@ -239,7 +252,7 @@ async def success(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data["vip"] = True
 
     await update.message.reply_text(
-        f"✅ *Thanks, gamer!*\n⭐ You donated *{stars} Stars* 🔥",
+        f"🔥 *GG Gamer!*\n⭐ You donated *{stars} Stars*",
         parse_mode="Markdown"
     )
 
@@ -254,5 +267,4 @@ app.add_handler(CommandHandler("start", start))
 app.add_handler(CallbackQueryHandler(buttons))
 app.add_handler(PreCheckoutQueryHandler(precheckout))
 app.add_handler(MessageHandler(filters.SUCCESSFUL_PAYMENT, success))
-
 app.run_polling()
