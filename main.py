@@ -34,14 +34,23 @@ YOUTUBE_LINK = "https://www.youtube.com/@polo_ggg"
 KEY_LINK = "https://rblxscripthub.com"
 
 # ================= TEXT =================
-SCRIPT_TEXT = "🎉 *Free Script*\n\nUpdate soon..."
-VIP_SCRIPT_TEXT = "👑 *VIP Script*\n\nVIP content unlocked 👑"
+SCRIPT_TEXT = "🎉 *Free Script*\n\nUpdating..."
+VIP_SCRIPT_TEXT = "👑 *VIP Script*\n\nUpdating..."
 
 # ================= /START =================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[InlineKeyboardButton("🎮 Open Menu", callback_data="open_menu")]]
     await update.message.reply_text(
-        "🎮 *PoloX Scripts Hub*\n\n👑 *VIP* — *300 Stars*",
+        "🎮 *🎮🔥 WELCOME, PLAYER! 🔥🎮
+
+You’ve entered PoloX Scripts Hub 💥
+Here you’ll find scripts, executors, VIP drops & cool stuff 😎⚡
+
+💎 Unlock VIP with ⭐ Telegram Stars
+🚀 Level up your gameplay
+👑 Play smart. Play fast. Play like a PRO.
+
+👉 Press Open Menu and let’s cook! 🍳🔥*",
         parse_mode="Markdown",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
