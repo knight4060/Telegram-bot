@@ -51,6 +51,7 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
+    # ===== MAIN MENU =====
     if query.data == "open_menu":
         keyboard = [
             [
@@ -58,7 +59,7 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 InlineKeyboardButton("👑 VIP Script", callback_data="vip")
             ],
             [InlineKeyboardButton("⚙️ Executor", callback_data="executor")],
-            [InlineKeyboardButton("⭐ Donate", callback_data="buy_vip")],
+            [InlineKeyboardButton("⭐ Donate", callback_data="donate_menu")],
             [
                 InlineKeyboardButton("📸 Instagram", url=INSTAGRAM_LINK),
                 InlineKeyboardButton("📺 YouTube", url=YOUTUBE_LINK)
@@ -71,6 +72,7 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
 
+    # ===== FREE SCRIPT =====
     elif query.data == "script":
         await query.edit_message_text(
             SCRIPT_TEXT,
@@ -80,13 +82,14 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
         )
 
+    # ===== VIP SCRIPT =====
     elif query.data == "vip":
         if not context.user_data.get("vip"):
             await query.edit_message_text(
                 "🔒 *VIP Only*\n\nBuy VIP for *300 Stars* 👑",
                 parse_mode="Markdown",
                 reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("⭐ Buy VIP", callback_data="buy_vip")],
+                    [InlineKeyboardButton("👑 Buy VIP (300 ⭐)", callback_data="buy_vip")],
                     [InlineKeyboardButton("🔙 Back", callback_data="open_menu")]
                 ])
             )
@@ -99,6 +102,7 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
             )
 
+    # ===== EXECUTOR =====
     elif query.data == "executor":
         await query.edit_message_text(
             "⚙️ Choose platform",
@@ -135,13 +139,77 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ])
         )
 
+    # ===== DONATE MENU (RANGE) =====
+    elif query.data == "donate_menu":
+        await query.edit_message_text(
+            "💖 *Choose donate range:*",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("⭐ 10–100 Stars", callback_data="range_small")],
+                [InlineKeyboardButton("⭐ 100–1000 Stars", callback_data="range_big")],
+                [InlineKeyboardButton("🔙 Back", callback_data="open_menu")]
+            ])
+        )
+
+    # ===== SMALL RANGE =====
+    elif query.data == "range_small":
+        await query.edit_message_text(
+            "⭐ *Donate 10–100 Stars*",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton("10⭐", callback_data="pay_10"),
+                    InlineKeyboardButton("25⭐", callback_data="pay_25"),
+                    InlineKeyboardButton("50⭐", callback_data="pay_50")
+                ],
+                [
+                    InlineKeyboardButton("75⭐", callback_data="pay_75"),
+                    InlineKeyboardButton("100⭐", callback_data="pay_100")
+                ],
+                [InlineKeyboardButton("🔙 Back", callback_data="donate_menu")]
+            ])
+        )
+
+    # ===== BIG RANGE =====
+    elif query.data == "range_big":
+        await query.edit_message_text(
+            "⭐ *Donate 100–1000 Stars*",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton("100⭐", callback_data="pay_100"),
+                    InlineKeyboardButton("250⭐", callback_data="pay_250"),
+                    InlineKeyboardButton("500⭐", callback_data="pay_500")
+                ],
+                [
+                    InlineKeyboardButton("750⭐", callback_data="pay_750"),
+                    InlineKeyboardButton("1000⭐", callback_data="pay_1000")
+                ],
+                [InlineKeyboardButton("🔙 Back", callback_data="donate_menu")]
+            ])
+        )
+
+    # ===== PAY (HAMMA SUMMALAR) =====
+    elif query.data.startswith("pay_"):
+        amount = int(query.data.split("_")[1])
+        await context.bot.send_invoice(
+            chat_id=query.from_user.id,
+            title="⭐ Donate",
+            description=f"Support with {amount} Telegram Stars",
+            payload=f"donate_{amount}",
+            provider_token="",
+            currency="XTR",
+            prices=[LabeledPrice(f"{amount} Stars", amount)],
+        )
+
+    # ===== BUY VIP =====
     elif query.data == "buy_vip":
         await context.bot.send_invoice(
             chat_id=query.from_user.id,
             title="👑 VIP Access",
             description="VIP access for 300 Telegram Stars",
             payload="vip_300",
-            provider_token="",  # Stars uchun shart
+            provider_token="",
             currency="XTR",
             prices=[LabeledPrice("VIP Access", VIP_PRICE)],
         )
@@ -157,7 +225,10 @@ async def success(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if stars >= VIP_PRICE:
         context.user_data["vip"] = True
 
-    await update.message.reply_text("👑 VIP activated! Thank you ⭐")
+    await update.message.reply_text(
+        f"✅ *Thank you!*\n⭐ You donated *{stars} Stars*",
+        parse_mode="Markdown"
+    )
 
     await context.bot.send_message(
         ADMIN_ID,
