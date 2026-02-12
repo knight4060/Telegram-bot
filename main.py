@@ -34,6 +34,16 @@ YOUTUBE_LINK = "https://www.youtube.com/@polo_ggg"
 KEY_LINK = "https://rblxscripthub.com"
 
 # ================= TEXT =================
+WELCOME_TEXT = (
+    "🎮🔥 **WELCOME, PLAYER!** 🔥🎮\n\n"
+    "You’ve entered **PoloX Scripts Hub** 💥\n"
+    "Scripts, executors, VIP drops & cool stuff — all in one place 😎⚡\n\n"
+    "💎 Unlock **VIP** with ⭐ *Telegram Stars*\n"
+    "🚀 Level up your gameplay\n"
+    "👑 Play smart. Play fast. Play like a PRO.\n\n"
+    "👉 **Press _Open Menu_ and let’s cook!** 🍳🔥"
+)
+
 SCRIPT_TEXT = "🎉 *Free Script*\n\nUpdating..."
 VIP_SCRIPT_TEXT = "👑 *VIP Script*\n\nUpdating..."
 
@@ -41,16 +51,7 @@ VIP_SCRIPT_TEXT = "👑 *VIP Script*\n\nUpdating..."
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[InlineKeyboardButton("🎮 Open Menu", callback_data="open_menu")]]
     await update.message.reply_text(
-        "🎮 *🎮🔥 WELCOME, PLAYER! 🔥🎮
-
-You’ve entered PoloX Scripts Hub 💥
-Here you’ll find scripts, executors, VIP drops & cool stuff 😎⚡
-
-💎 Unlock VIP with ⭐ Telegram Stars
-🚀 Level up your gameplay
-👑 Play smart. Play fast. Play like a PRO.
-
-👉 Press Open Menu and let’s cook! 🍳🔥*",
+        WELCOME_TEXT,
         parse_mode="Markdown",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
@@ -76,7 +77,7 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [InlineKeyboardButton("🔑 Key Script", url=KEY_LINK)]
         ]
         await query.edit_message_text(
-            "📂 *Main Menu*",
+            "📂 *Main Menu*\nChoose your move 👇",
             parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
@@ -95,7 +96,7 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == "vip":
         if not context.user_data.get("vip"):
             await query.edit_message_text(
-                "🔒 *VIP Only*\n\nBuy VIP for *300 Stars* 👑",
+                "🔒 *VIP Only*\n\nUnlock VIP for *300 Stars* 👑",
                 parse_mode="Markdown",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("👑 Buy VIP (300 ⭐)", callback_data="buy_vip")],
@@ -114,7 +115,8 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # ===== EXECUTOR =====
     elif query.data == "executor":
         await query.edit_message_text(
-            "⚙️ Choose platform",
+            "⚙️ *Choose your platform*",
+            parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup([
                 [
                     InlineKeyboardButton("💻 PC", callback_data="pc"),
@@ -126,7 +128,8 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif query.data == "pc":
         await query.edit_message_text(
-            "💻 PC Executors",
+            "💻 *PC Executors*",
+            parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup([
                 [
                     InlineKeyboardButton("Xeno", url=EXECUTOR_PC_XENO),
@@ -138,7 +141,8 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif query.data == "android":
         await query.edit_message_text(
-            "🤖 Android Executors",
+            "🤖 *Android Executors*",
+            parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup([
                 [
                     InlineKeyboardButton("Delta", url=EXECUTOR_ANDROID_DELTA),
@@ -198,7 +202,7 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ])
         )
 
-    # ===== PAY (HAMMA SUMMALAR) =====
+    # ===== PAY =====
     elif query.data.startswith("pay_"):
         amount = int(query.data.split("_")[1])
         await context.bot.send_invoice(
@@ -235,7 +239,7 @@ async def success(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data["vip"] = True
 
     await update.message.reply_text(
-        f"✅ *Thank you!*\n⭐ You donated *{stars} Stars*",
+        f"✅ *Thanks, gamer!*\n⭐ You donated *{stars} Stars* 🔥",
         parse_mode="Markdown"
     )
 
