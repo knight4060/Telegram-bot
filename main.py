@@ -64,6 +64,10 @@ conn.commit()
 
 # ================= DB HELPERS =================
 def is_vip(user_id: int) -> bool:
+    # 🔥 ADMIN ALWAYS VIP
+    if user_id == ADMIN_ID:
+        return True
+
     cursor.execute("SELECT expires_at FROM vip_users WHERE user_id=?", (user_id,))
     row = cursor.fetchone()
     return row and row[0] > int(time.time())
@@ -119,12 +123,17 @@ async def animate(query, text="⚡ Loading..."):
 async def vip_notifier(app):
     while True:
         now = int(time.time())
-        soon = now + 86400  # 24h
+        soon = now + 86400
+
         cursor.execute(
             "SELECT user_id FROM vip_users WHERE expires_at < ? AND notified = 0",
             (soon,)
         )
+
         for (uid,) in cursor.fetchall():
+            if uid == ADMIN_ID:
+                continue  # admin skip
+
             try:
                 await app.bot.send_message(
                     uid,
@@ -138,6 +147,7 @@ async def vip_notifier(app):
                 conn.commit()
             except:
                 pass
+
         await asyncio.sleep(3600)
 
 # ================= /START =================
@@ -158,7 +168,6 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = user.id
     uname = f"@{user.username}" if user.username else user.first_name
 
-    # ===== MAIN MENU =====
     if query.data == "menu":
         await animate(query, "🎮 Opening menu...")
         await query.edit_message_text(
@@ -181,16 +190,6 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ])
         )
 
-    elif query.data == "free":
-        await animate(query)
-        await query.edit_message_text(
-            FREE_SCRIPT_TEXT,
-            parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🔙 Back", callback_data="menu")]
-            ])
-        )
-
     elif query.data == "vip":
         await animate(query, "👑 Checking VIP...")
         if is_vip(uid):
@@ -210,157 +209,6 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     [InlineKeyboardButton("🔙 Back", callback_data="menu")]
                 ])
             )
-
-    elif query.data == "executor":
-        await animate(query)
-        await query.edit_message_text(
-            "⚙️ *Choose platform*",
-            parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup([
-                [
-                    InlineKeyboardButton("💻 PC", callback_data="pc"),
-                    InlineKeyboardButton("🤖 Android", callback_data="android")
-                ],
-                [InlineKeyboardButton("🔙 Back", callback_data="menu")]
-            ])
-        )
-
-    elif query.data == "pc":
-        await animate(query)
-        await query.edit_message_text(
-            "💻 *PC Executors*",
-            parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup([
-                [
-                    InlineKeyboardButton("Xeno", url=EXECUTOR_PC_XENO),
-                    InlineKeyboardButton("Solara", url=EXECUTOR_PC_SOLARA)
-                ],
-                [InlineKeyboardButton("🔙 Back", callback_data="executor")]
-            ])
-        )
-
-    elif query.data == "android":
-        await animate(query)
-        await query.edit_message_text(
-            "🤖 *Android Executors*",
-            parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup([
-                [
-                    InlineKeyboardButton("Delta", url=EXECUTOR_ANDROID_DELTA),
-                    InlineKeyboardButton("Krnl", url=EXECUTOR_ANDROID_KRNL)
-                ],
-                [InlineKeyboardButton("🔙 Back", callback_data="executor")]
-            ])
-        )
-
-    elif query.data == "vip_buy":
-        await animate(query)
-        await query.edit_message_text(
-            "👑 *Choose VIP Plan*",
-            parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("7 Days — 550⭐", callback_data="vip_7")],
-                [InlineKeyboardButton("30 Days — 2550⭐", callback_data="vip_30")],
-                [InlineKeyboardButton("1 Year — 10000⭐", callback_data="vip_365")],
-                [InlineKeyboardButton("🔙 Back", callback_data="menu")]
-            ])
-        )
-
-    elif query.data == "donate_menu":
-        await animate(query)
-        await query.edit_message_text(
-            "⭐ *Donate Options*",
-            parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("10–100 Stars", callback_data="donate_small")],
-                [InlineKeyboardButton("100–1000 Stars", callback_data="donate_big")],
-                [InlineKeyboardButton("🔙 Back", callback_data="menu")]
-            ])
-        )
-
-    elif query.data == "donate_small":
-        await animate(query)
-        await query.edit_message_text(
-            "⭐ *Donate 10–100*",
-            parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup([
-                [
-                    InlineKeyboardButton("10⭐", callback_data="pay_10"),
-                    InlineKeyboardButton("25⭐", callback_data="pay_25"),
-                    InlineKeyboardButton("50⭐", callback_data="pay_50")
-                ],
-                [
-                    InlineKeyboardButton("75⭐", callback_data="pay_75"),
-                    InlineKeyboardButton("100⭐", callback_data="pay_100")
-                ],
-                [InlineKeyboardButton("🔙 Back", callback_data="donate_menu")]
-            ])
-        )
-
-    elif query.data == "donate_big":
-        await animate(query)
-        await query.edit_message_text(
-            "⭐ *Donate 100–1000*",
-            parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup([
-                [
-                    InlineKeyboardButton("250⭐", callback_data="pay_250"),
-                    InlineKeyboardButton("500⭐", callback_data="pay_500")
-                ],
-                [
-                    InlineKeyboardButton("750⭐", callback_data="pay_750"),
-                    InlineKeyboardButton("1000⭐", callback_data="pay_1000")
-                ],
-                [InlineKeyboardButton("🔙 Back", callback_data="donate_menu")]
-            ])
-        )
-
-    elif query.data == "leaderboard":
-        await animate(query, "🏆 Loading leaderboard...")
-        data = get_leaderboard()
-        text = "🏆 *Top Donators*\n\n"
-        if not data:
-            text += "No donations yet."
-        else:
-            for i, (name, stars) in enumerate(data, 1):
-                text += f"{i}. {name} — ⭐ {stars}\n"
-
-        await query.edit_message_text(
-            text,
-            parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🔙 Back", callback_data="menu")]
-            ])
-        )
-
-    elif query.data.startswith("pay_"):
-        amount = int(query.data.split("_")[1])
-        await context.bot.send_invoice(
-            chat_id=uid,
-            title="⭐ Donate",
-            description=f"Support with {amount} Stars",
-            payload=f"donate_{amount}",
-            provider_token="",
-            currency="XTR",
-            prices=[LabeledPrice(f"{amount} Stars", amount)]
-        )
-
-    elif query.data in ["vip_7", "vip_30", "vip_365"]:
-        plans = {
-            "vip_7": (VIP_7_PRICE, 7),
-            "vip_30": (VIP_30_PRICE, 30),
-            "vip_365": (VIP_365_PRICE, 365)
-        }
-        stars, days = plans[query.data]
-        await context.bot.send_invoice(
-            chat_id=uid,
-            title="👑 VIP Access",
-            description=f"VIP for {days} days",
-            payload=query.data,
-            provider_token="",
-            currency="XTR",
-            prices=[LabeledPrice("VIP Access", stars)]
-        )
 
 # ================= PAYMENTS =================
 async def precheckout(update: Update, context: ContextTypes.DEFAULT_TYPE):
