@@ -29,16 +29,6 @@ VIP_365_PRICE = 10000
 if not TOKEN:
     raise RuntimeError("TOKEN is not set")
 
-# ================= LINKS =================
-EXECUTOR_PC_XENO = "https://www.xeno.onl/"
-EXECUTOR_PC_SOLARA = "https://getsolara.dev/"
-EXECUTOR_ANDROID_DELTA = "https://delta-executor.com/"
-EXECUTOR_ANDROID_KRNL = "https://krnl.en.malavida.com/android/"
-
-INSTAGRAM_LINK = "https://www.instagram.com/polo_bro.7p"
-YOUTUBE_LINK = "https://www.youtube.com/@polo_ggg"
-KEY_LINK = "https://rblxscripthub.com"
-
 # ================= DB =================
 conn = sqlite3.connect("bot.db", check_same_thread=False)
 cursor = conn.cursor()
@@ -64,10 +54,8 @@ conn.commit()
 
 # ================= DB HELPERS =================
 def is_vip(user_id: int) -> bool:
-    # 🔥 ADMIN ALWAYS VIP
     if user_id == ADMIN_ID:
         return True
-
     cursor.execute("SELECT expires_at FROM vip_users WHERE user_id=?", (user_id,))
     row = cursor.fetchone()
     return row and row[0] > int(time.time())
@@ -75,11 +63,13 @@ def is_vip(user_id: int) -> bool:
 def add_vip(user_id: int, username: str, days: int):
     expires = int(time.time()) + days * 86400
     cursor.execute(
-        """INSERT OR REPLACE INTO vip_users
-        (user_id, username, expires_at, notified)
-        VALUES (?, ?, ?, 0)""",
+        "INSERT OR REPLACE INTO vip_users (user_id, username, expires_at, notified) VALUES (?, ?, ?, 0)",
         (user_id, username, expires)
     )
+    conn.commit()
+
+def remove_vip(user_id: int):
+    cursor.execute("DELETE FROM vip_users WHERE user_id=?", (user_id,))
     conn.commit()
 
 def add_donation(user_id: int, username: str, stars: int):
@@ -97,64 +87,20 @@ def add_donation(user_id: int, username: str, stars: int):
         )
     conn.commit()
 
+def reset_leaderboard():
+    cursor.execute("DELETE FROM donations")
+    conn.commit()
+
 def get_leaderboard():
     cursor.execute(
         "SELECT username, total_stars FROM donations ORDER BY total_stars DESC LIMIT 10"
     )
     return cursor.fetchall()
 
-# ================= TEXT =================
-WELCOME_TEXT = (
-    "🎮🔥 **WELCOME, PLAYER!** 🔥🎮\n\n"
-    "You’ve entered **PoloX Scripts Hub** 💥\n"
-    "Scripts, executors, VIP drops & gamer tools 😎⚡\n\n"
-    "👉 **Press Open Menu and let’s cook!** 🍳🔥"
-)
-
-FREE_SCRIPT_TEXT = "🎉 *Free Script*\n\nUpdating..."
-VIP_SCRIPT_TEXT = "👑 *VIP Script*\n\nUpdating..."
-
-# ================= HELPER =================
-async def animate(query, text="⚡ Loading..."):
-    await query.edit_message_text(text)
-    await asyncio.sleep(0.4)
-
-# ================= VIP NOTIFIER =================
-async def vip_notifier(app):
-    while True:
-        now = int(time.time())
-        soon = now + 86400
-
-        cursor.execute(
-            "SELECT user_id FROM vip_users WHERE expires_at < ? AND notified = 0",
-            (soon,)
-        )
-
-        for (uid,) in cursor.fetchall():
-            if uid == ADMIN_ID:
-                continue  # admin skip
-
-            try:
-                await app.bot.send_message(
-                    uid,
-                    "⏰👑 *VIP WARNING*\n\nYour VIP expires in *24 hours* ⚠️\nRenew to stay powerful 🔥",
-                    parse_mode="Markdown"
-                )
-                cursor.execute(
-                    "UPDATE vip_users SET notified=1 WHERE user_id=?",
-                    (uid,)
-                )
-                conn.commit()
-            except:
-                pass
-
-        await asyncio.sleep(3600)
-
 # ================= /START =================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        WELCOME_TEXT,
-        parse_mode="Markdown",
+        "🎮🔥 Welcome Player!\nPress Open Menu 👇",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("🎮 Open Menu", callback_data="menu")]
         ])
@@ -168,79 +114,110 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = user.id
     uname = f"@{user.username}" if user.username else user.first_name
 
+    # ===== MAIN MENU =====
     if query.data == "menu":
-        await animate(query, "🎮 Opening menu...")
+        keyboard = [
+            [
+                InlineKeyboardButton("📜 Free Script", callback_data="free"),
+                InlineKeyboardButton("👑 VIP Script", callback_data="vip")
+            ],
+            [InlineKeyboardButton("👑 Buy VIP", callback_data="vip_buy")],
+            [InlineKeyboardButton("⭐ Donate", callback_data="donate")],
+            [InlineKeyboardButton("🏆 Leaderboard", callback_data="leaderboard")]
+        ]
+
+        # 🔥 Hidden Admin Button
+        if uid == ADMIN_ID:
+            keyboard.append(
+                [InlineKeyboardButton("🛠 Admin Panel", callback_data="admin_panel")]
+            )
+
         await query.edit_message_text(
-            "📂 *Main Menu*",
-            parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup([
-                [
-                    InlineKeyboardButton("📜 Free Script", callback_data="free"),
-                    InlineKeyboardButton("👑 VIP Script", callback_data="vip")
-                ],
-                [InlineKeyboardButton("⚙️ Executor", callback_data="executor")],
-                [InlineKeyboardButton("👑 Buy VIP", callback_data="vip_buy")],
-                [InlineKeyboardButton("⭐ Donate", callback_data="donate_menu")],
-                [InlineKeyboardButton("🏆 Leaderboard", callback_data="leaderboard")],
-                [
-                    InlineKeyboardButton("📸 Instagram", url=INSTAGRAM_LINK),
-                    InlineKeyboardButton("📺 YouTube", url=YOUTUBE_LINK)
-                ],
-                [InlineKeyboardButton("🔑 Key Script", url=KEY_LINK)]
-            ])
+            "📂 Main Menu",
+            reply_markup=InlineKeyboardMarkup(keyboard)
         )
 
+    # ===== VIP SCRIPT =====
     elif query.data == "vip":
-        await animate(query, "👑 Checking VIP...")
         if is_vip(uid):
+            badge = " 👑 ADMIN" if uid == ADMIN_ID else ""
             await query.edit_message_text(
-                VIP_SCRIPT_TEXT,
-                parse_mode="Markdown",
+                f"👑 VIP Script{badge}\n\nPremium content unlocked 🔥",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("🔙 Back", callback_data="menu")]
                 ])
             )
         else:
             await query.edit_message_text(
-                "🔒 *VIP Only*",
-                parse_mode="Markdown",
+                "🔒 VIP Only",
                 reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("👑 Buy VIP", callback_data="vip_buy")],
+                    [InlineKeyboardButton("Buy VIP", callback_data="vip_buy")],
                     [InlineKeyboardButton("🔙 Back", callback_data="menu")]
                 ])
             )
 
-# ================= PAYMENTS =================
-async def precheckout(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.pre_checkout_query.answer(ok=True)
+    # ===== ADMIN PANEL =====
+    elif query.data == "admin_panel" and uid == ADMIN_ID:
+        await query.edit_message_text(
+            "🛠 ADMIN PANEL",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("➕ Give VIP (30d)", callback_data="admin_give_vip")],
+                [InlineKeyboardButton("➖ Remove VIP", callback_data="admin_remove_vip")],
+                [InlineKeyboardButton("🧹 Reset Leaderboard", callback_data="admin_reset_lb")],
+                [InlineKeyboardButton("🔙 Back", callback_data="menu")]
+            ])
+        )
 
-async def success(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    pay = update.message.successful_payment
-    user = update.message.from_user
-    uid = user.id
-    uname = f"@{user.username}" if user.username else user.first_name
+    elif query.data == "admin_give_vip" and uid == ADMIN_ID:
+        context.user_data["await_vip_user"] = True
+        await query.edit_message_text(
+            "Send USER ID to give 30 days VIP:",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔙 Back", callback_data="admin_panel")]
+            ])
+        )
 
-    add_donation(uid, uname, pay.total_amount)
+    elif query.data == "admin_remove_vip" and uid == ADMIN_ID:
+        context.user_data["await_remove_user"] = True
+        await query.edit_message_text(
+            "Send USER ID to remove VIP:",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔙 Back", callback_data="admin_panel")]
+            ])
+        )
 
-    if pay.invoice_payload == "vip_7":
-        add_vip(uid, uname, 7)
-    elif pay.invoice_payload == "vip_30":
-        add_vip(uid, uname, 30)
-    elif pay.invoice_payload == "vip_365":
-        add_vip(uid, uname, 365)
+    elif query.data == "admin_reset_lb" and uid == ADMIN_ID:
+        reset_leaderboard()
+        await query.answer("Leaderboard reset ✅", show_alert=True)
 
-    await update.message.reply_text(
-        f"🔥 *GG Gamer!*\n⭐ You donated *{pay.total_amount} Stars*",
-        parse_mode="Markdown"
-    )
+# ================= MESSAGE HANDLER (ADMIN INPUT) =================
+async def handle_admin_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != ADMIN_ID:
+        return
+
+    if context.user_data.get("await_vip_user"):
+        try:
+            target = int(update.message.text)
+            add_vip(target, "AdminGranted", 30)
+            await update.message.reply_text("VIP granted for 30 days ✅")
+        except:
+            await update.message.reply_text("Invalid ID")
+        context.user_data["await_vip_user"] = False
+
+    elif context.user_data.get("await_remove_user"):
+        try:
+            target = int(update.message.text)
+            remove_vip(target)
+            await update.message.reply_text("VIP removed ❌")
+        except:
+            await update.message.reply_text("Invalid ID")
+        context.user_data["await_remove_user"] = False
 
 # ================= RUN =================
 app = ApplicationBuilder().token(TOKEN).build()
+
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CallbackQueryHandler(buttons))
-app.add_handler(PreCheckoutQueryHandler(precheckout))
-app.add_handler(MessageHandler(filters.SUCCESSFUL_PAYMENT, success))
-
-asyncio.get_event_loop().create_task(vip_notifier(app))
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_admin_input))
 
 app.run_polling()
